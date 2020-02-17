@@ -178,10 +178,10 @@ to_dag <- function(mat){
 #'     coefx(y ~ x + zr, mat),  
 #'     lwd = 2, xv= 5,xlim = c(-5,10), ylim = c(-25, 50))
 #' lines(
-#'     coefx(y ~ x + zl, mat), new = F,
+#'     coefx(y ~ x + zl, mat), new = FALSE,
 #'     col = 'red', xv = 5, lwd = 2)
 #' lines(
-#'     coefx(y ~ x + i, mat), new = F,
+#'     coefx(y ~ x + i, mat), new = FALSE,
 #'     col = 'dark green', xv = 5)
 #' 
 #' # comparing models
