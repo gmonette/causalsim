@@ -8,6 +8,9 @@ Description: Generates the covariance matrix of variables
     given a linear causal DAG, which can then be used to
     generate a sample of observations from the multivariate
     distribution. 
+Depends:
+    dagitty,
+    ggdag
 License: GNU GENERAL PUBLIC LICENSE, Version 3
 Encoding: UTF-8
 LazyData: true
