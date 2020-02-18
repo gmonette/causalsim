@@ -1,7 +1,7 @@
 Package: causalsim
 Type: Package
 Title: Covariance Matrix of a Causal Graph
-Version: 0.1.0
+Version: 0.1.1
 Author: Georges Monette
 Maintainer: Georges Monette <georges@yorku.ca>
 Description: Generates the covariance matrix of variables
