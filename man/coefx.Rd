@@ -2,7 +2,7 @@
 % Please edit documentation in R/causalsim.R
 \name{coefx}
 \alias{coefx}
-\title{Multiple regression oefficient from a linear DAG}
+\title{Multiple regression coefficient from a linear DAG}
 \usage{
 coefx(fmla, dag)
 }
@@ -38,7 +38,7 @@ a list with class 'coefx' containing
 }
 \description{
 Given a linear DAG, find the population regression 
-coefficent using data with the marginal covariance
+coefficents using data with the marginal covariance
 structure implied by the linear DAG.
 }
 \examples{
