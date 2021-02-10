@@ -106,10 +106,10 @@ to_dag <- function(mat){
   class(ret) <- unique(c('dag', class(ret)))
   ret
 }
-#' Multiple regression oefficient from a linear DAG
+#' Multiple regression coefficient from a linear DAG
 #' 
 #' Given a linear DAG, find the population regression 
-#' coefficent using data with the marginal covariance
+#' coefficents using data with the marginal covariance
 #' structure implied by the linear DAG.
 #' 
 #' @param fmla a linear model formula. The variables
