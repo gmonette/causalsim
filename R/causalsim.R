@@ -52,7 +52,7 @@ covld <- function(mat) {
 #' 
 #' A square matrix containing causal coefficients with 
 #' standard deviation of unique components on the
-#' diagonal is transformend into a lower-triangular
+#' diagonal is transformed into a lower-triangular
 #' matrix by permutations of its rows and columns,
 #' if possible. Otherwise an error is produced.
 #' 
@@ -62,7 +62,7 @@ covld <- function(mat) {
 #'        for rows and columns. Off-diagonal entries
 #'        are causal coefficients for the row
 #'        variable depending on the column variables.
-#'        The diagonal elememts are standard deviations
+#'        The diagonal elements are standard deviations
 #'        of the the independent component producing
 #'        variability in the row variable. 
 #' @return If the input matrix represents a DAG,
@@ -127,6 +127,8 @@ to_dag <- function(mat){
 #'        defines a linear dag if the same permutation
 #'        of its rows and columns can transform it into
 #'        a lower diagonal matrix.
+#' @param var variance matrix of variables if entered directly
+#'        without a dag.
 #' @return a list with class 'coefx' containing 
 #'        the population coefficient for the first
 #'        predictor variable in \code{fmla}, the residual 
@@ -222,19 +224,98 @@ to_dag <- function(mat){
 #' plot(dag)
 #' 
 #' @export
-coefx <- function(fmla, dag){
-	v <- covld(to_dag(dag))
+coefx <- function(fmla, dag, var = covld(to_dag(dag))){
 	ynam <- as.character(fmla)[2]
 	xnam <- labels(terms(fmla))
-	v <- v[c(ynam,xnam),c(ynam,xnam)]
-	beta <- solve(v[-1,-1], v[1,-1])
-	sd_e <- sqrt(v[1,1] - sum(v[1,-1]*beta))
-	sd_x_avp <- sqrt(1/solve(v[-1,-1])[1,1])
+	var <- var[c(ynam,xnam),c(ynam,xnam)]
+	beta <- solve(var[-1,-1], var[1,-1])
+	sd_e <- sqrt(var[1,1] - sum(var[1,-1]*beta))
+	sd_x_avp <- sqrt(1/solve(var[-1,-1])[1,1])
 	ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
 		 sd_betax_factor = sd_e/sd_x_avp, fmla = fmla)
 	class(ret) <- 'coefx'
 	ret
 }
+#' Regression coefficient from a linear DAG possibly using an IV
+#' 
+#' Given a linear DAG, find the population regression 
+#' coefficient for X using IV estimation
+#' using data with the marginal covariance
+#' structure implied by the linear DAG.
+#' 
+#' @param fmla a linear model formula. The variables
+#'        in the formula must be column names of 
+#'        \code{dag}. For IV estimation, the right
+#'        hand side should have two variables, the
+#'        first one will be treated as the 'X'
+#'        variable and the second, as the IV.
+#' @param dag a square matrix defining a linear DAG. The
+#'        column names and row names of A must be 
+#'        identical.  The non-diagonal entries of 
+#'        \code{dag} contain the causal of coefficients
+#'        of arrows pointing from the column variable
+#'        to the row variable.  The diagonal entries
+#'        are standard deviations of the normally
+#'        distributed independent component generating
+#'        the row variable. A matrix
+#'        defines a linear dag if the same permutation
+#'        of its rows and columns can transform it into
+#'        a lower diagonal matrix.
+#' @param iv a one-sided formula with a single variable (at present)
+#'        specifying a variable to be used as an instrumental variable
+#' @param var the variance matrix of the variables, as an alternative
+#'        input to 'dag'. If 'var' is provided, then dag does not
+#'        need to be provided.
+#' @return a list with class 'coefx' containing 
+#'        the population coefficient for the first
+#'        predictor variable in \code{fmla}, the residual 
+#'        standard error of the regression, the conditional
+#'        standard deviation of the residual of the first
+#'        predictor and the ratio of the last two quantities
+#'        which constitutes the 'standard error factor' which,
+#'        if multiplied by 1/sqrt(n) is an estimate of the
+#'        standard error of the estimate of the regression
+#'        coefficient for the first predictor variable.
+#' @export
+coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
+  v <- var
+  ynam <- as.character(fmla)[2]
+  xnam <- labels(terms(fmla))
+  if(!is.null(iv)) {
+    if(length(xnam) > 1) warning('coefxiv currently supports only one X variable for IV analyses')
+    xnam <- xnam[1]
+  }
+  if(!is.null(iv)) ivnam <- as.character(iv)[2]
+  
+  if(!is.null(iv)) v <- v[c(ynam,xnam,ivnam),c(ynam,xnam,ivnam)]
+  else  v <- v[c(ynam,xnam),c(ynam,xnam)]
+  if(is.null(iv)) beta <- solve(v[-1,-1], v[1,-1])
+  else beta <- v[1,3]/v[2,3]
+  if(is.null(iv)) sd_e <- sqrt(v[1,1] - sum(v[1,-1]*beta))
+  else sd_e <- sqrt(
+    v[1,1] + beta^2 * v[2,2] - 2 * beta * v[1,2]
+  )
+  if(is.null(iv)) sd_x_avp <- sqrt(1/solve(v[-1,-1])[1,1])
+  else sd_x_avp <- v[2,3]/sqrt(v[3,3])   # Fox, p. 233, eqn 9.29
+  
+  if(is.null(iv)) label <- 
+    paste(as.character(fmla)[c(2,1,3)], collapse = ' ')
+  else label <- paste0(ynam, ' ~ ', xnam, ' (IV = ', ivnam,')')
+  ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
+              sd_betax_factor = sd_e/sd_x_avp, fmla = fmla, 
+              iv = if(is.null(iv)) '' else iv,
+              label = label,
+              dag = if(!missing(dag)) dag else '',
+              var = v)
+  class(ret) <- c('coefx')
+  ret
+}
+#' @export
+as.data.frame.coefx <- function(x, ...) {
+  with(x, data.frame(beta_x = beta[1], sd_e = sd_e, sd_x_avp = sd_x_avp,
+                     sd_factor = sd_betax_factor, label = label))
+}
+#' 
 #' Plotting the added-variable plot for linear DAG
 #' 
 #' See \code{\link{coefx}} for an extended example.

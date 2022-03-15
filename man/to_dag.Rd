@@ -11,7 +11,7 @@ to_dag(mat)
 for rows and columns. Off-diagonal entries
 are causal coefficients for the row
 variable depending on the column variables.
-The diagonal elememts are standard deviations
+The diagonal elements are standard deviations
 of the the independent component producing
 variability in the row variable.}
 }
@@ -29,7 +29,7 @@ If the input matrix represents a DAG,
 \description{
 A square matrix containing causal coefficients with 
 standard deviation of unique components on the
-diagonal is transformend into a lower-triangular
+diagonal is transformed into a lower-triangular
 matrix by permutations of its rows and columns,
 if possible. Otherwise an error is produced.
 }

@@ -4,7 +4,7 @@
 \alias{coefx}
 \title{Multiple regression coefficient from a linear DAG}
 \usage{
-coefx(fmla, dag)
+coefx(fmla, dag, var = covld(to_dag(dag)))
 }
 \arguments{
 \item{fmla}{a linear model formula. The variables
@@ -23,6 +23,9 @@ the row variable. A matrix
 defines a linear dag if the same permutation
 of its rows and columns can transform it into
 a lower diagonal matrix.}
+
+\item{var}{variance matrix of variables if entered directly
+without a dag.}
 }
 \value{
 a list with class 'coefx' containing 
