@@ -4,7 +4,7 @@
 \alias{coefx}
 \title{Multiple regression coefficient from a linear DAG}
 \usage{
-coefx(fmla, dag, var = covld(to_dag(dag)))
+coefx(fmla, dag, var = covld(to_dag(dag)), iv = NULL)
 }
 \arguments{
 \item{fmla}{a linear model formula. The variables

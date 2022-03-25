@@ -106,6 +106,8 @@ to_dag <- function(mat){
   class(ret) <- unique(c('dag', class(ret)))
   ret
 }
+#' @export
+permute_to_dag <- to_dag
 #' Multiple regression coefficient from a linear DAG
 #' 
 #' Given a linear DAG, find the population regression 
@@ -224,15 +226,19 @@ to_dag <- function(mat){
 #' plot(dag)
 #' 
 #' @export
-coefx <- function(fmla, dag, var = covld(to_dag(dag))){
+coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
 	ynam <- as.character(fmla)[2]
 	xnam <- labels(terms(fmla))
+	if(any(grepl('\\|', xnam)) | !is.null(iv)) {
+	  return(coefxiv(fmla, var = var, iv = iv))
+	}
 	var <- var[c(ynam,xnam),c(ynam,xnam)]
 	beta <- solve(var[-1,-1], var[1,-1])
 	sd_e <- sqrt(var[1,1] - sum(var[1,-1]*beta))
 	sd_x_avp <- sqrt(1/solve(var[-1,-1])[1,1])
+	label <- paste(as.character(fmla)[c(2,1,3)], collapse = ' ')
 	ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
-		 sd_betax_factor = sd_e/sd_x_avp, fmla = fmla)
+		 sd_betax_factor = sd_e/sd_x_avp, fmla = fmla, label = label)
 	class(ret) <- 'coefx'
 	ret
 }
@@ -278,7 +284,19 @@ coefx <- function(fmla, dag, var = covld(to_dag(dag))){
 #'        coefficient for the first predictor variable.
 #' @export
 coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
+  sepiv <- function(fmla) {
+    # separate model formula and iv from formula
+    cfmla <- as.character(fmla)
+    fmla <- as.formula(paste(cfmla[2], ' ~ ', sub('\\|.*$','',cfmla[3])))
+    iv <- if(grepl('\\|', cfmla[3])) as.formula(paste( ' ~ ', sub('^.*\\|','',cfmla[3]))) else NULL
+    list(fmla, iv)
+  }
   v <- var
+  if(grepl('\\|',as.character(fmla)[3] )){
+    fmiv <- sepiv(fmla)
+    fmla <- fmiv[[1]]
+    iv <- fmiv[[2]]
+  }
   ynam <- as.character(fmla)[2]
   xnam <- labels(terms(fmla))
   if(!is.null(iv)) {
