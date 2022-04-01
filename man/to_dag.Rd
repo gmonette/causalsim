@@ -2,9 +2,12 @@
 % Please edit documentation in R/causalsim.R
 \name{to_dag}
 \alias{to_dag}
+\alias{permute_to_dag}
 \title{Transform a matrix of causal coefficients to a DAG}
 \usage{
 to_dag(mat)
+
+permute_to_dag(mat)
 }
 \arguments{
 \item{mat}{a square matrix with variable names
