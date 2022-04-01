@@ -4,11 +4,11 @@
 \alias{plot.dag}
 \title{Plot a causal graph}
 \usage{
-\method{plot}{dag}(dag, ...)
+\method{plot}{dag}(x, ...)
 }
 \arguments{
-\item{dag}{a lower-triangular matrix representing a DAG. In
-constrast with other function, the DAG argument must
+\item{x}{a lower-triangular matrix representing a DAG. In
+constrast with other function, the `x` argument must
 have class 'dag' and, so, must have been constructed
 with \code{\link{to_dag}}.}
 

@@ -13,6 +13,7 @@
 #' @docType package
 #' @name causalsim
 NULL
+
 #' Covariance matrix for a linear DAG
 #' 
 #' Computes the overall covariance matrix generated
@@ -48,6 +49,7 @@ covld <- function(mat) {
 	}
 	v
 }
+
 #' Transform a matrix of causal coefficients to a DAG
 #' 
 #' A square matrix containing causal coefficients with 
@@ -108,6 +110,8 @@ to_dag <- function(mat){
 }
 #' @export
 permute_to_dag <- to_dag
+
+
 #' Multiple regression coefficient from a linear DAG
 #' 
 #' Given a linear DAG, find the population regression 
@@ -141,6 +145,7 @@ permute_to_dag <- to_dag
 #'        if multiplied by 1/sqrt(n) is an estimate of the
 #'        standard error of the estimate of the regression
 #'        coefficient for the first predictor variable.
+#' @importFrom stats terms
 #' @examples
 #' nams <- c('zc','zl','zr','c','x','y','m','i')
 #' mat <- matrix(0, length(nams), length(nams))
@@ -282,6 +287,7 @@ coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
 #'        if multiplied by 1/sqrt(n) is an estimate of the
 #'        standard error of the estimate of the regression
 #'        coefficient for the first predictor variable.
+#' @importFrom stats as.formula
 #' @export
 coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
   sepiv <- function(fmla) {
@@ -328,17 +334,20 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
   class(ret) <- c('coefx')
   ret
 }
+
+#' Convert a coefx object to a data frame
 #' @export
 as.data.frame.coefx <- function(x, ...) {
   with(x, data.frame(beta_x = beta[1], sd_e = sd_e, sd_x_avp = sd_x_avp,
                      sd_factor = sd_betax_factor, label = label))
 }
+
 #' 
 #' Plotting the added-variable plot for linear DAG
 #' 
 #' See \code{\link{coefx}} for an extended example.
 #' 
-#' @param cx an object of class 'coefx' produced by
+#' @param x an object of class 'coefx' produced by
 #'        \code{\link{coefx}}.
 #' @param new if FALSE add to previous plot. Default: TRUE.
 #' @param xvertical position of vertical line to help visualize
@@ -346,46 +355,32 @@ as.data.frame.coefx <- function(x, ...) {
 #' @param col color of ellipse and lines. Default: 'black'.
 #' @param lwd line width.
 #' @param \dots other arguments passed to \code{\link{plot}}.
+#' @importFrom graphics lines abline
 #' @export
-lines.coefx <- function(cx, new = TRUE, xvertical = 1,  col = 'black', lwd = 2, ...) {
+lines.coefx <- function(x, new = TRUE, xvertical = 1,  col = 'black', lwd = 2, ...) {
+  cx <- x
 	fmla <- as.character(cx$fmla)
 	xlab <- sub(' .*$','',fmla[3])
 	ylab <- fmla[2]
 	mlab <- paste(fmla[1], fmla[3])
 	Tr <- with(cx, matrix(c(0, sd_e, sd_x_avp, sd_x_avp * beta[1]), nrow = 2))
-	if(new) plot(ell(shape = Tr %*% t(Tr)), col = col, type = 'l', xlab = xlab, ylab = ylab, lwd = lwd, ...)
-	else lines(ell(shape = Tr %*% t(Tr)), col = col, lwd = lwd) 
+	if(new) plot(ell(shape = Tr %*% t(Tr)), 
+	             col = col, type = 'l', xlab = xlab, ylab = ylab, lwd = lwd, ...)
+	else lines(ell(shape = Tr %*% t(Tr)), 
+	           col = col, lwd = lwd) 
 	abline(a=0,b=cx$beta[1], col = col, lwd = lwd)
 	with(cx, abline(a=0,b=beta[1]- sd_e/sd_x_avp, col = col, lwd = lwd))
 	with(cx, abline(a=0,b=beta[1]+ sd_e/sd_x_avp, col = col, lwd = lwd))
 	abline(v = xvertical, lwd = lwd)
-	with(cx, text(xvertical, xvertical *(beta[1]- sd_e/sd_x_avp), paste(' ',mlab) , adj = 0, cex = 1, col = col, ...))
+	with(cx, text(xvertical, xvertical *(beta[1]- sd_e/sd_x_avp), paste(' ',mlab) , 
+	              adj = 0, cex = 1, col = col, ...))
 }
+
 #' @export
 lines_ <-function(x, col = 'black', xvertical = 1, new = F, lwd = 2, ...) {
 	lines(x, col = col, xvertical = xvertical , new = new, lwd = lwd, ... )
 }
-#' @export
-ell <-
-function (center = rep(0, 2), shape = diag(2), radius = 1, n = 100) 
-{
-    fac <- function(x) {
-        xx <- svd(x, nu = 0)
-        t(xx$v) * sqrt(pmax(xx$d, 0))
-    }
-    angles = (0:n) * 2 * pi/n
-    if (length(radius) > 1) {
-        ret <- lapply(radius, function(r) rbind(r * cbind(cos(angles), 
-            sin(angles)), NA))
-        circle <- do.call(rbind, ret)
-    }
-    else circle = radius * cbind(cos(angles), sin(angles))
-    ret <- t(c(center) + t(circle %*% fac(shape)))
-    attr(ret, "parms") <- list(center = rbind(center), 
-        shape = shape, radius = radius)
-    class(ret) <- "ell"
-    ret
-}
+
 #' Simulate a data frame from a DAG
 #' 
 #' Simulates a data frame from the multivariate normal
@@ -401,6 +396,7 @@ function (center = rep(0, 2), shape = diag(2), radius = 1, n = 100)
 #'        distribution with mean zero
 #'        and variance matrix implied by the 
 #'        coefficients of the DAG.
+#' @importFrom stats rnorm
 #' @export
 sim <- function(dag, n) {
     fac <- function(x) {
@@ -414,18 +410,22 @@ sim <- function(dag, n) {
 	names(ret) <- colnames(dag)
 	ret
 }
+
 #' Plot a causal graph
 #' 
 #' Uses \code{\link[ggdag]{ggdag}} to plot the graph of a DAG.
 #' 
-#' @param dag a lower-triangular matrix representing a DAG. In
-#'        constrast with other function, the DAG argument must
+#' @param x a lower-triangular matrix representing a DAG. In
+#'        constrast with other function, the `x` argument must
 #'        have class 'dag' and, so, must have been constructed
 #'        with \code{\link{to_dag}}.
 #' @param ... passed to \code{\link[ggdag]{ggdag}}.
 #' @return plots a causal graph with \code{\link[ggdag]{ggdag}}.
+#' @importFrom dagitty dagitty
+#' @importFrom ggdag ggdag
 #' @export
-plot.dag <- function(dag, ...) {
+plot.dag <- function(x, ...) {
+  dag <- x
   makedagitty <- function(mat) {
     string <- ''
     df <- as.data.frame(as.table(dag))

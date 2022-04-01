@@ -4,10 +4,10 @@
 \alias{lines.coefx}
 \title{Plotting the added-variable plot for linear DAG}
 \usage{
-\method{lines}{coefx}(cx, new = TRUE, xvertical = 1, col = "black", lwd = 2, ...)
+\method{lines}{coefx}(x, new = TRUE, xvertical = 1, col = "black", lwd = 2, ...)
 }
 \arguments{
-\item{cx}{an object of class 'coefx' produced by
+\item{x}{an object of class 'coefx' produced by
 \code{\link{coefx}}.}
 
 \item{new}{if FALSE add to previous plot. Default: TRUE.}
