@@ -130,6 +130,7 @@ plot.dag <- function(x, ...) {
   dag <- x
   makedagitty <- function(mat) {
     string <- ''
+    Var1 <- Var2 <- Freq <- 0   # make check happy
     df <- as.data.frame(as.table(dag))
     df <- subset(df, Var1 != Var2)
     df <- subset(df, Freq > 0)
