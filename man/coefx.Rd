@@ -41,6 +41,19 @@ a list with class 'coefx' containing
        if multiplied by 1/sqrt(n) is an estimate of the
        standard error of the estimate of the regression
        coefficient for the first predictor variable.
+
+       The elements are:
+\describe{
+   \item{\code{beta}}{ the population coefficient for the first predictor variable in the \code{fmla}}
+   \item{\code{sd_e}}{ the residual standard error of the regression}
+   \item{\code{sd_x_avp}}{ the conditional standard deviation of the residual of the first predictor}
+   \item{\code{sd_betax_factor}}{the 'standard error factor', the ratio \code{sd_e / sd_x_avp}, 
+         which, if multiplied by 1/sqrt(n) is an estimate of the  standard error of the estimate 
+         of the regression coefficient for the first predictor variable}
+   \item{\code{fmla}}{ the formula}
+   \item{\code{label}}{ a character string of the formula}
+   
+}
 }
 \description{
 Given a linear DAG, find the population regression 
@@ -48,6 +61,7 @@ coefficents using data with the marginal covariance
 structure implied by the linear DAG.
 }
 \examples{
+library(dagitty)
 nams <- c('zc','zl','zr','c','x','y','m','i')
 mat <- matrix(0, length(nams), length(nams))
 rownames(mat) <- nams
@@ -129,6 +143,6 @@ var(sim(dag, 10000)) - covld(dag)
 
 # plotting
 
-plot(dag)
+plot(dag) + ggdag::theme_dag()
 
 }
