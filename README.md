@@ -25,9 +25,87 @@ remotes::install.github("gmonette/causalsim)
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This example creates a DAG consisting of a collection of paths among the
+following variables in a causal analysis. The variables included here
+are:
+
+-   **x** the focal predictor, e.g., a treatment variable
+-   **y** the outcome
+-   **m** a mediator variable
+-   **i** an instrumental variable, i.e., a predictor of only **x**
+-   **c** a covariate, i.e., a predictor of **y** one might also want to
+    take into account
+-   **zr**
+-   **zc** a central confounder, providing a backdoor path from **x**
+    through **zl** to **y** through **zr**
+-   **zl**
+
+The DAG to be studied here is:
+
+<!-- why isn't this found?
+![]("man/figures/coefx-ex-dag.png")
+-->
+
+In `causalsim` this DAG is to be setup as a square matrix, `mat`, whose
+rows and columns are the 8 variables shown in the figure. The entries
+are:
+
+-   `mat[i, j]` = coefficient on the path from variable `j` to `i`
+-   `mat[i, i]` = error variance associated with variable `i`
 
 ``` r
 library(causalsim)
-## basic example code
+
+nams <- c('zc','zl','zr','c','x','y','m','i')
+mat <- matrix(0, length(nams), length(nams))
+rownames(mat) <- nams
+colnames(mat) <- nams
+
+# set up paths: each value is the regression coefficient on the path
+
+# direct effect
+mat['y','x'] <- 3
+
+# indirect effect
+mat['m','x'] <- 1
+mat['y','m'] <- 1
+
+# Instrumental variable 
+mat['x','i'] <- 2
+
+# 'Covariate'
+mat['y','c'] <- 1
+
+# confounding back-door path
+mat['zl','zc'] <- 2 
+mat['zr','zc'] <- 2
+mat['x','zl'] <- 1
+mat['y','zr'] <- 2
+
+# independent error
+diag(mat) <- 2
+
+mat # not in lower diagonal form   
+#>    zc zl zr c x y m i
+#> zc  2  0  0 0 0 0 0 0
+#> zl  2  2  0 0 0 0 0 0
+#> zr  2  0  2 0 0 0 0 0
+#> c   0  0  0 2 0 0 0 0
+#> x   0  1  0 0 2 0 0 2
+#> y   0  0  2 1 3 2 1 0
+#> m   0  0  0 0 1 0 2 0
+#> i   0  0  0 0 0 0 0 2
+dag <- to_dag(mat) # can be permuted to lower-diagonal form
+dag
+#>    i zc zl x m c zr y
+#> i  2  0  0 0 0 0  0 0
+#> zc 0  2  0 0 0 0  0 0
+#> zl 0  2  2 0 0 0  0 0
+#> x  2  0  1 2 0 0  0 0
+#> m  0  0  0 1 2 0  0 0
+#> c  0  0  0 0 0 2  0 0
+#> zr 0  2  0 0 0 0  2 0
+#> y  0  0  0 3 1 1  2 2
+#> attr(,"class")
+#> [1] "dag"    "matrix" "array"
 ```

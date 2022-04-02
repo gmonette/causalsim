@@ -35,6 +35,7 @@
 #'        coefficient for the first predictor variable.
 #' @importFrom stats terms
 #' @examples
+#' library(dagitty)
 #' nams <- c('zc','zl','zr','c','x','y','m','i')
 #' mat <- matrix(0, length(nams), length(nams))
 #' rownames(mat) <- nams
@@ -116,7 +117,7 @@
 #' 
 #' # plotting
 #'
-#' plot(dag)
+#' plot(dag) + ggdag::theme_dag()
 #' 
 #' @export
 coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
