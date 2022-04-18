@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+examples/
+tmp/
+Rplot.pdf
+^README\.Rmd$
