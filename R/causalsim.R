@@ -131,6 +131,7 @@ permute_to_dag <- to_dag
 #'        a lower diagonal matrix.
 #' @param var variance matrix of variables if entered directly
 #'        without a dag.
+#' @param nadj sample size to calculate adjusted R-squared. Default: 30.
 #' @return a list with class 'coefx' containing 
 #'        the population coefficient for the first
 #'        predictor variable in \code{fmla}, the residual 
@@ -226,19 +227,21 @@ permute_to_dag <- to_dag
 #' plot(dag)
 #' 
 #' @export
-coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
+coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL, nadj = 30){
 	ynam <- as.character(fmla)[2]
 	xnam <- labels(terms(fmla))
 	if(any(grepl('\\|', xnam)) | !is.null(iv)) {
-	  return(coefxiv(fmla, var = var, iv = iv))
+	  return(coefxiv(fmla, var = var, iv = iv, nadj = nadj))
 	}
 	var <- var[c(ynam,xnam),c(ynam,xnam)]
 	beta <- solve(var[-1,-1], var[1,-1])
 	sd_e <- sqrt(var[1,1] - sum(var[1,-1]*beta))
+	R2 <- 1 - sd_e^2/var[1,1]   # per Hugh's suggestion
+	R2adj <- 1- (1-R2)*(nadj-1)/(nadj - 1 - length(xnam))
 	sd_x_avp <- sqrt(1/solve(var[-1,-1])[1,1])
 	label <- paste(as.character(fmla)[c(2,1,3)], collapse = ' ')
 	ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
-		 sd_betax_factor = sd_e/sd_x_avp, fmla = fmla, label = label)
+		 sd_betax_factor = sd_e/sd_x_avp, R2 = R2, R2adj = R2adj, fmla = fmla, label = label)
 	class(ret) <- 'coefx'
 	ret
 }
@@ -272,6 +275,7 @@ coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
 #' @param var the variance matrix of the variables, as an alternative
 #'        input to 'dag'. If 'var' is provided, then dag does not
 #'        need to be provided.
+#' @param nadj sample size to calculate adjusted R-squared. Default: 30.
 #' @return a list with class 'coefx' containing 
 #'        the population coefficient for the first
 #'        predictor variable in \code{fmla}, the residual 
@@ -283,7 +287,7 @@ coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL){
 #'        standard error of the estimate of the regression
 #'        coefficient for the first predictor variable.
 #' @export
-coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
+coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag)), nadj = 30){
   sepiv <- function(fmla) {
     # separate model formula and iv from formula
     cfmla <- as.character(fmla)
@@ -313,6 +317,8 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
   else sd_e <- sqrt(
     v[1,1] + beta^2 * v[2,2] - 2 * beta * v[1,2]
   )
+  R2 <- 1 - sd_e^2/var[1,1]   # per Hugh's suggestion
+  R2adj <- 1- (1-R2)*(nadj-1)/(nadj - 1 - length(xnam))
   if(is.null(iv)) sd_x_avp <- sqrt(1/solve(v[-1,-1])[1,1])
   else sd_x_avp <- v[2,3]/sqrt(v[3,3])   # Fox, p. 233, eqn 9.29
   
@@ -320,7 +326,7 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
     paste(as.character(fmla)[c(2,1,3)], collapse = ' ')
   else label <- paste0(ynam, ' ~ ', xnam, ' (IV = ', ivnam,')')
   ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
-              sd_betax_factor = sd_e/sd_x_avp, fmla = fmla, 
+              sd_betax_factor = sd_e/sd_x_avp, R2 = R2, fmla = fmla, 
               iv = if(is.null(iv)) '' else iv,
               label = label,
               dag = if(!missing(dag)) dag else '',
@@ -331,7 +337,7 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag))){
 #' @export
 as.data.frame.coefx <- function(x, ...) {
   with(x, data.frame(beta_x = beta[1], sd_e = sd_e, sd_x_avp = sd_x_avp,
-                     sd_factor = sd_betax_factor, label = label))
+                     sd_factor = sd_betax_factor, R2 = R2, R2adj = R2adj,label = label))
 }
 #' 
 #' Plotting the added-variable plot for linear DAG

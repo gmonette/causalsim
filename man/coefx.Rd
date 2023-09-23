@@ -4,7 +4,7 @@
 \alias{coefx}
 \title{Multiple regression coefficient from a linear DAG}
 \usage{
-coefx(fmla, dag, var = covld(to_dag(dag)), iv = NULL)
+coefx(fmla, dag, var = covld(to_dag(dag)), iv = NULL, nadj = 30)
 }
 \arguments{
 \item{fmla}{a linear model formula. The variables
@@ -26,6 +26,8 @@ a lower diagonal matrix.}
 
 \item{var}{variance matrix of variables if entered directly
 without a dag.}
+
+\item{nadj}{sample size to calculate adjusted R-squared. Default: 30.}
 }
 \value{
 a list with class 'coefx' containing 

@@ -4,7 +4,7 @@
 \alias{coefxiv}
 \title{Regression coefficient from a linear DAG possibly using an IV}
 \usage{
-coefxiv(fmla, dag, iv = NULL, var = covld(to_dag(dag)))
+coefxiv(fmla, dag, iv = NULL, var = covld(to_dag(dag)), nadj = 30)
 }
 \arguments{
 \item{fmla}{a linear model formula. The variables
@@ -33,6 +33,8 @@ specifying a variable to be used as an instrumental variable}
 \item{var}{the variance matrix of the variables, as an alternative
 input to 'dag'. If 'var' is provided, then dag does not
 need to be provided.}
+
+\item{nadj}{sample size to calculate adjusted R-squared. Default: 30.}
 }
 \value{
 a list with class 'coefx' containing 
