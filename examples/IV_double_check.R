@@ -3,7 +3,7 @@
 #' fontsize: 12pt
 #' output:
 #'   pdf_document
-#' bibliography: bibliography.bib
+#' bibliography: bib.bib
 #' ---
 #' \newcommand{\N}{\mathrm{N}}
 #' \newcommand{\Var}{\mathrm{Var}}

@@ -1,5 +1,5 @@
 #' ---
-#' title: "IV or Regression"
+#' title: "A Causal Zoo"
 #' geometry: paperheight=10in,paperwidth=8in,margin=0.5in
 #' author: ''
 #' bibliography: bib.bib
@@ -38,7 +38,9 @@
 # fig.fullwidth = TRUE, with fig.width and fig.height, out.width
 # https://www.statmethods.net/RiA/lattice.pdf
 # 
-# See the The_Causal_Zoo.R for 3d with R2
+# Adapted from IV_or_Regression.R to focus on general comparisons
+# and incorporating Hugh McCague's idea of adding R-Squared or 
+# some other measure of fit.
 # 
 #+ setup2, include=FALSE 
 knitr::opts_chunk$set(
@@ -56,17 +58,18 @@ knitr::opts_chunk$set(comment='     ')
 library(causalsim)
 library(latticeExtra)
 library(latex2exp)
+library(p3d)
 #'
+#' \listoffigures
 #' \clearpage
 #' 
-#' # The Causal Zoo
+#' # A Causal Zoo
 #' 
-#' ![](dag_full.png)
+#' ![A DAG](dag_full.png){width=70%}
 #'
-{
   nams <- c('z','zx','zy','cov','x','y',
             'm','i', 'xd', 'yd', 'zd', 
-            'col', 'i2')
+            'col')
   mat <- matrix(0, length(nams), length(nams))
   rownames(mat) <- nams
   colnames(mat) <- nams
@@ -82,7 +85,7 @@ library(latex2exp)
   
   mat['y','x'] <- 3
   
-  # indirect effect: Note that the causal effect is 3 + 1x1 = 4
+  # indirect effect: Note that the causal effect is 3 + 1 x 1 = 4
   
   mat['m','x'] <- 1
   mat['y','m'] <- 1
@@ -90,10 +93,6 @@ library(latex2exp)
   # Instrumental variable 
   
   mat['x','i'] <- 1
-  
-  # Secondary instrument
-  
-  mat['zx','i2'] <- 1
   
   # 'Covariate'
   
@@ -116,27 +115,35 @@ library(latex2exp)
   mat['col','y'] <- 1
   mat['col','x'] <- 1
   
-  
   # independent SD of error for every variable
   
   diag(mat) <- 1
   
-  # but make SD of Y smaller 
+  # but make SD of Y different 
   
-  mat['y','y'] <- .01
-  mat['i2','i2'] <- 3
-  mat['i','i'] <- 2
-  
-  
-  mat # not in lower diagonal form   
-  dag <- permute_to_dag(mat) # can be permuted to lower-diagonal form
-  dag # this allows us to iteratively work out the covariance matrix
-}
+  mat['y','y'] <- 4
+  mat['i','i'] <- 2.4
 
 #'
-#' Some models to try:
+#' # DAG - not in lower triangular form
 #'
-
+  mat
+#'
+#' # DAG - in lower triangular form
+#'
+#' Expressing the DAG in lower triangular form makes it
+#' easy to iteratively work out the variance matrix.
+     
+dag <- permute_to_dag(mat) # can be permuted to lower-diagonal form
+dag 
+#'
+#' # Variance matrix
+#'
+covld(dag)
+#' \clearpage
+#' 
+#' # Some models to try
+#'
 fmlas <- list(
   y ~ x,             # with confounding
   y ~ x + z,         # unconfounded
@@ -147,79 +154,91 @@ fmlas <- list(
   y ~ x + z + m,     # adding a mediator
   y ~ x + z + xd,    # adding a descendant of X
   y ~ x + z + yd,    # adding a descendant of Y
+  y ~ x + z + yd + cov,    # adding a descendant of Y and a covariate
   y ~ x + z + col,   # adding a collider
   y ~ x + z + i,     # adding an instrumental variable
-  y ~ x + z + i2,    # adding a secondary instrumental variable
   y ~ x + z + i + cov,  # adding an instrumental variable and a covariate
+  y ~ x + xd,        # adding a descendant of x
   y ~ x + i,         # using an instrumental variable as a control
-  y ~ x + i2,        # using an instrumental variable as a control
   y ~ x + zd,        # imperfect control for confounding
+  y ~ x + zd + cov,  # imperfect control + covariate
+  y ~ x + zd + xd,   # imperfect control + descendant of x
   y ~ x + zd + i,    # bias amplification
-  y ~ x + zd + i2,   # bias amplification
-  y ~ x | i,         # instrumental variable
-  y ~ x | i2         # secondary instrumental variable
+  y ~ x | i          # instrumental variable using two-stage least squares
 )
-
+#' \clearpage
+#'
+#' # 'Fitting' the models
+#'
 fmlas %>% 
   lapply(coefx, dag) %>% 
   lapply(as.data.frame) %>% 
   do.call(rbind.data.frame, .) -> df
 
-pdf <- df
-sapply(pdf, is.numeric) %>% 
-  {pdf[,.] <<- round(pdf[,.], 2)}
-pdf[, c(5,1,4,2,3)] %>% print(row.names=F)
-
 df <- within(
   df,
-  {
-    pos <- ifelse(grepl('IV|zy|m',label), 2, 4)
+  { # label positions for plotting
+    pos <- ifelse(grepl('IV|zy|m|zd.*z', label), 2, 4)
+    pos2 <- ifelse(grepl('yd$|z . xd|zd$', label), 2, pos)
+    pos2 <- ifelse(grepl('yd', label), 3, pos2)
+    pos2 <- ifelse(grepl('yd.*cov$', label), 1, pos2)
   }
 )
+pdf <- df
+sapply(pdf, is.numeric) %>% 
+  {pdf[,.] <<- round(pdf[,.], 3)}
+pdf[, c(6,1,4,2,3,5)] %>% print(row.names=F)
 
 #'
 #' \clearpage
 #' 
+cap = "$Var(\\hat{\\beta}_x)$ and $E(\\hat{\\beta}_x)$: variance versus bias."
+#- bias, fig.height=7,fig.cap=cap
+df %>% 
+  xyplot(log2(sd_factor^2) ~ beta_x, . , font = 2, cex = 1,
+         scales = list(y = list(at=seq(-3,10), labels=2^(5+seq(-3,10)))),
+         xlim = c(-1.6, 6.5), 
+         pch = 20,
+         xlab = TeX('$E(\\hat{\\beta})$'),
+         ylab = TeX('$Var(\\hat{\\beta})$ using relative $n$ to get equivalent power'),
+         labs = sub('y ~ ','',.$label),
+         pos = .$pos) +
+  layer(panel.grid(h=-1,v=-1)) +
+  layer(panel.abline(v = 4, lty = 3)) + 
+  layer(panel.text(..., labels = labs, pos = pos)) 
+#' \clearpage
 #' 
-#- fig.height=7
-
-xyplot(log10(sd_factor^2) ~ beta_x, df , font = 2,
-       # scales = list(y = list(log = 10)),
-       scales = list(y = list(at=seq(-3,3), labels=10^(3+seq(-3,3)))),
-       xlim = c(-.6, 6), 
-       pch = 16,
-       xlab = TeX('$E(\\hat{\\beta})$'),
-       ylab = TeX('relative $n$ to get equivalent power'),
-       labs = sub('y ~ ','',df$label),
-       pos = df$pos) +
+#' ![Variance versus bias with DAG](bias_dag.png)
+#' 
+#' \clearpage
+#' 
+#' # Which model is best? 
+#' 
+#' __It depends on the purpose of the analysis!__ Thanks to Hugh McCague for
+#' the idea of including the following figure to illustrate how focusing
+#' on predictive power does not lead to a suitable model to estimate the
+#' causal effect of X.
+#-
+caption <- "Adjusted measure of fit versus bias. Which model(s) would you choose?"
+#- bias-gof, fig.height=7, fig.cap = caption
+df %>% 
+  subset(!grepl('i2', label)) %>%
+  xyplot(var_e_adj ~ beta_x, . , font = 2,
+         #scales = list(y = list(at=seq(-3,10), labels=2^(5+seq(-3,10)))),
+         # xlim = c(-.6, 6), 
+         pch = 16,
+         xlab = TeX('$E(\\hat{\\beta})$'),
+         ylab = TeX('Goodness of fit using an equivalent to adjusted R-squared (smaller is better)'),
+         labs = sub('y ~ ','',.$label),
+         pos = .$pos2) +
   layer(panel.text(..., labels = labs, pos = pos)) +
   layer(panel.grid(h=-1,v=-1)) +
   layer(panel.abline(v = 4, lty = 3))
 #' \clearpage
-#- fig.height=7
-
-xyplot(log10(sd_factor^2) ~ beta_x, df , font = 2, cex = 1.2,
-       # scales = list(y = list(log = 10)),
-       scales = list(y = list(at=seq(-3,3), labels=10^(3+seq(-3,3)))),
-       xlim = c(2.5, 5.5), 
-       pch = 16,
-       xlab = TeX('$E(\\hat{\\beta})$'),
-       ylab = TeX('relative $n$ to get equivalent power'),
-       labs = sub('y ~ ','',df$label),
-       pos = df$pos) +
-  layer(panel.text(..., labels = labs, pos = pos)) +
-  layer(panel.grid(h=-1,v=-1)) +
-  layer(panel.abline(v = 4, lty = 3))
-
-
-#'
-#' ![width='50%'](dag3_full.png)
-#'
-#' \clearpage
 #' 
-#' # What's Happening?
+#' # What's happening with IVs?
 #' 
-#' ![](dag1.png)
+#' ![A simple DAG with an IV](dag1.png){width=50%}
 #' 
 #' Let's assume multivariate normality 
 #' and build a variance matrix for Z, I, X, Y. 
@@ -329,53 +348,17 @@ xyplot(log10(sd_factor^2) ~ beta_x, df , font = 2, cex = 1.2,
 #' of the IV with X_ directly that affects the IVVIF, but its __partial
 #' correlation__ adjusted for the relationship of X with confounders.
 #' 
+#' In conclusion: In any situation where you have a choice,
+#' controlling for confounders will do better than using a corresponding IV,
+#' i.e. an IV that annihilates the confounder. Fitting with IVs does
+#' not take the same advantage of a model with a small error variance in
+#' the same way that a regression model does. 
 #' 
-#' <!-- 
-##' # PLAN ------
-#'
-#' - Continue, express factors as partial $R^2$ thereby clearly showing
-#'   scaling invariance.
-#' - Generate some example.
-#' - Discuss how this shows that it isn't specifically correlation with of I with X
-#'   that matters but the partial $R^2$ having adjusted for $Z$ although we
-#'   can't compute it not having $Z$.
-#' - See also:
-#'   - 
-#'   
-##' # NOTES ------
-##' 
-##' - Partial $R^2$ for I in X ~ Z + I is $\frac{b^2}{b^2 + c^2}$
-##' - Partial $R^2$ for Z in Y ~ Z + X is $...$
-##' - $\begin{aligned}
-##'   R^2_{y,Z|X} &= \frac{SSR(X,Z) - SSR(X)}{SSE(X)}\\
-##'                &= \frac{SSE(X) -SSE(X,Z) }{SSE(X)}
-##'   \end{aligned}$ 
-##' - Conclusions: In any situation where you have a choice,
-##'   controlling for confounders will do better than using an IV,
-##'   even with the worst confounder model, i.e. one that 'overpredicts'
-##'   X (not in the sense of overfitting but in the sense of predicting
-##'   better than necessary to unconfound).  __Fitting with IVs does
-##'   not take the same advantage of a model with a small error variance 
-##'   that a regression model does. The lower bound for error variance
-##'   created by the confounder would usually swamp the benefit of
-##'   small residual variance in the generating model. In contrast,
-##'   a regression model takes full proportional advantage of a
-##'   reduction in residual error.
-##' - In practice, of course, we don't have Z. That's why we're
-##'   using an IV. 
-##' 
-##'  
-#'  
-#' # Is this I an IV?
-#' 
-#' ![](dag2.png)
-#' 
-#' We can block the backdoor path by conditioning on $Z_Y$. $I_2$ would
-#' seem to be an IV for the model for which $Z_Y$ is a confounder.
-#' 
-#' Are thee factors favoring using $I_2$ over $I_1$? Actually, won't
-#' satisfy exclusion restrictions.
-#' -->
+#' The lower bound for error variance
+#' created by the confounder could swamp the benefit of
+#' small residual variance in the generating model. In contrast,
+#' a regression model takes full proportional advantage of a
+#' reduction in residual error.
 #' 
 #' # References 
 #' 

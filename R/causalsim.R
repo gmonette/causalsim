@@ -238,10 +238,12 @@ coefx <- function(fmla, dag, var = covld(to_dag(dag)), iv = NULL, nadj = 30){
 	sd_e <- sqrt(var[1,1] - sum(var[1,-1]*beta))
 	R2 <- 1 - sd_e^2/var[1,1]   # per Hugh's suggestion
 	R2adj <- 1- (1-R2)*(nadj-1)/(nadj - 1 - length(xnam))
+	var_e_adj <- sd_e^2 * (nadj - 1)/(nadj - 1 - length(xnam)) 
 	sd_x_avp <- sqrt(1/solve(var[-1,-1])[1,1])
 	label <- paste(as.character(fmla)[c(2,1,3)], collapse = ' ')
 	ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
-		 sd_betax_factor = sd_e/sd_x_avp, R2 = R2, R2adj = R2adj, fmla = fmla, label = label)
+		 sd_betax_factor = sd_e/sd_x_avp, R2 = R2, R2adj = R2adj, 
+		 var_e_adj = var_e_adj, fmla = fmla, label = label)
 	class(ret) <- 'coefx'
 	ret
 }
@@ -319,6 +321,7 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag)), nadj = 30){
   )
   R2 <- 1 - sd_e^2/var[1,1]   # per Hugh's suggestion
   R2adj <- 1- (1-R2)*(nadj-1)/(nadj - 1 - length(xnam))
+  var_e_adj <- sd_e^2 * (nadj - 1)/(nadj - 1 - length(xnam)) 
   if(is.null(iv)) sd_x_avp <- sqrt(1/solve(v[-1,-1])[1,1])
   else sd_x_avp <- v[2,3]/sqrt(v[3,3])   # Fox, p. 233, eqn 9.29
   
@@ -328,6 +331,7 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag)), nadj = 30){
   ret <- list(beta=beta, sd_e =sd_e, sd_x_avp = sd_x_avp,
               sd_betax_factor = sd_e/sd_x_avp, R2 = R2, fmla = fmla, 
               iv = if(is.null(iv)) '' else iv,
+              var_e_adj = var_e_adj,
               label = label,
               dag = if(!missing(dag)) dag else '',
               var = v)
@@ -337,7 +341,8 @@ coefxiv <- function(fmla, dag, iv = NULL, var = covld(to_dag(dag)), nadj = 30){
 #' @export
 as.data.frame.coefx <- function(x, ...) {
   with(x, data.frame(beta_x = beta[1], sd_e = sd_e, sd_x_avp = sd_x_avp,
-                     sd_factor = sd_betax_factor, R2 = R2, R2adj = R2adj,label = label))
+                     sd_factor = sd_betax_factor, 
+                     var_e_adj = var_e_adj, label = label))
 }
 #' 
 #' Plotting the added-variable plot for linear DAG
