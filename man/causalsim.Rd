@@ -2,6 +2,7 @@
 % Please edit documentation in R/causalsim.R
 \docType{package}
 \name{causalsim}
+\alias{causalsim-package}
 \alias{causalsim}
 \title{causalsim: A package to explore linear causal DAGs}
 \description{

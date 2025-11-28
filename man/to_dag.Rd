@@ -23,8 +23,7 @@ If the input matrix represents a DAG,
        simulating variables in the same order
        as the row order. If the input matrix
        cannot define a DAG (i.e. is not
-       acyclic) the function return FALSE
-       with an error message.
+       acyclic) the function return FALSE.
 }
 \description{
 A square matrix containing causal coefficients with 
@@ -35,4 +34,30 @@ if possible. Otherwise an error is produced.
 }
 \details{
 See \code{\link{coefx}} for an extended example.
+}
+\examples{
+vars <- c('d','o','a','y')  # from Cunningham, S. (2021) Causal Inference: The Mixtape, p. 107
+# d is discrimination (causal variable of interest)
+# o is occupational stratification
+# a is individual ability
+# y is individual income (outcome)
+#
+# DAG is:   d -> o <- a -> y
+#
+mat <- matrix(0, length(vars), length(vars), 
+     dimnames = list(vars,vars))
+mat['y','a'] <- mat['o','a'] <- mat['o','d'] <- 1
+diag(mat) <- 3   # unique variance
+mat
+to_dag(mat)  
+# 
+# What if a matrix does not represent a DAG (i.e. has a cycle)
+#
+mat['d','o'] <- 1
+to_dag(mat)
+mat['d','o'] <- 0
+dag <- to_dag(mat)
+coefx(y ~ d, dag)
+
+
 }

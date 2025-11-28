@@ -35,7 +35,8 @@ covld <- function(mat) {
 	
 	# check if strict lower diag
 	# if(sum(abs(mat[col(mat)>row(mat)])) > 0) stop('matrix must be lower diagonal')
-	mat <- to_dag(mat)
+	if(isFALSE(mat)) return(FALSE)
+  mat <- to_dag(mat)
 	# initialize returned v matrix
 	v <- diag(nrow(mat))
 	dimnames(v) <- dimnames(mat)
@@ -72,8 +73,32 @@ covld <- function(mat) {
 #'        simulating variables in the same order
 #'        as the row order. If the input matrix
 #'        cannot define a DAG (i.e. is not
-#'        acyclic) the function return FALSE
-#'        with an error message.
+#'        acyclic) the function return FALSE.
+#' @examples
+#' vars <- c('d','o','a','y')  # from Cunningham, S. (2021) Causal Inference: The Mixtape, p. 107
+#' # d is discrimination (causal variable of interest)
+#' # o is occupational stratification
+#' # a is individual ability
+#' # y is individual income (outcome)
+#' #
+#' # DAG is:   d -> o <- a -> y
+#' #
+#' mat <- matrix(0, length(vars), length(vars), 
+#'      dimnames = list(vars,vars))
+#' mat['y','a'] <- mat['o','a'] <- mat['o','d'] <- 1
+#' diag(mat) <- 3   # unique variance
+#' mat
+#' to_dag(mat)  
+#' # 
+#' # What if a matrix does not represent a DAG (i.e. has a cycle)
+#' #
+#' mat['d','o'] <- 1
+#' to_dag(mat)
+#' mat['d','o'] <- 0
+#' dag <- to_dag(mat)
+#' coefx(y ~ d, dag)
+#' 
+#' 
 #' @export
 to_dag <- function(mat){
   # check that mat has unique column and row names
@@ -435,6 +460,15 @@ sim <- function(dag, n) {
 #'        with \code{\link{to_dag}}.
 #' @param ... passed to \code{\link[ggdag]{ggdag}}.
 #' @return plots a causal graph with \code{\link[ggdag]{ggdag}}.
+#' @examples
+#' vars <- c('d','o','a','y')  # from Cunningham p. 122?
+#' mat <- matrix(0, length(vars), length(vars), dimnames = list(vars,vars))
+#' mat['y','a'] <- mat['o','a'] <- mat['o','d'] <- 1
+#' diag(mat) <- 3   # unique variance
+#' mat
+#' dag <- to_dag(mat)  
+#' dag
+#' plot(dag)  # randomly slightly different each time
 #' @export
 plot.dag <- function(dag, ...) {
   makedagitty <- function(mat) {
@@ -450,3 +484,4 @@ plot.dag <- function(dag, ...) {
   }
   ggdag::ggdag(makedagitty(dag), ...)
 }  
+

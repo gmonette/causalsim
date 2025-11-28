@@ -20,3 +20,13 @@ plots a causal graph with \code{\link[ggdag]{ggdag}}.
 \description{
 Uses \code{\link[ggdag]{ggdag}} to plot the graph of a DAG.
 }
+\examples{
+vars <- c('d','o','a','y')  # from Cunningham p. 122?
+mat <- matrix(0, length(vars), length(vars), dimnames = list(vars,vars))
+mat['y','a'] <- mat['o','a'] <- mat['o','d'] <- 1
+diag(mat) <- 3   # unique variance
+mat
+dag <- to_dag(mat)  
+dag
+plot(dag)  # randomly slightly different each time
+}
