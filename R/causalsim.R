@@ -131,6 +131,10 @@ to_dag <- function(mat){
   class(ret) <- unique(c('dag', class(ret)))
   ret
 }
+
+#' Synonym for to_dag
+#' 
+#' @rdname to_dag
 #' @export
 permute_to_dag <- to_dag
 #' Multiple regression coefficient from a linear DAG
@@ -437,6 +441,7 @@ function (center = rep(0, 2), shape = diag(2), radius = 1, n = 100)
 #'        distribution with mean zero
 #'        and variance matrix implied by the 
 #'        coefficients of the DAG.
+#' @importFrom stats rnorm
 #' @export
 sim <- function(dag, n) {
     fac <- function(x) {
@@ -450,12 +455,13 @@ sim <- function(dag, n) {
 	names(ret) <- colnames(dag)
 	ret
 }
+
 #' Plot a causal graph
 #' 
 #' Uses \code{\link[ggdag]{ggdag}} to plot the graph of a DAG.
 #' 
-#' @param dag a lower-triangular matrix representing a DAG. In
-#'        constrast with other function, the DAG argument must
+#' @param x a lower-triangular matrix representing a DAG. In
+#'        constrast with other function, the `x` argument must
 #'        have class 'dag' and, so, must have been constructed
 #'        with \code{\link{to_dag}}.
 #' @param ... passed to \code{\link[ggdag]{ggdag}}.
@@ -469,10 +475,14 @@ sim <- function(dag, n) {
 #' dag <- to_dag(mat)  
 #' dag
 #' plot(dag)  # randomly slightly different each time
+#' @importFrom dagitty dagitty
+#' @importFrom ggdag ggdag
 #' @export
-plot.dag <- function(dag, ...) {
+plot.dag <- function(x, ...) {
+  dag <- x
   makedagitty <- function(mat) {
     string <- ''
+    Var1 <- Var2 <- Freq <- 0   # make check happy
     df <- as.data.frame(as.table(dag))
     df <- subset(df, Var1 != Var2)
     df <- subset(df, Freq > 0)
